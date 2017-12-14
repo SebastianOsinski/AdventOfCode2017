@@ -1,5 +1,5 @@
 import unittest
-from day10 import knot_hash
+from knot_hash import knot_hash
 
 class KnotHashTests(unittest.TestCase):
     
