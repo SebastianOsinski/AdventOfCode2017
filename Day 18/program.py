@@ -1,11 +1,9 @@
 import time
-from threading import Thread
 from queue import Queue
 
-class Program(Thread):
+class Program:
 
     def __init__(self, program_id, instructions):
-        Thread.__init__(self)
         self.program_id = program_id
         self.instructions = instructions
         self.registers = {}
@@ -13,10 +11,14 @@ class Program(Thread):
         self.rcv_queue = Queue()
         self.snd_queue = None
         self.snd_counter = 0
+        self.waits_for_rcv = False
 
     def run(self):
-        while (0 <= self.counter < len(self.instructions)):
+        while self.can_run():
             self.execute(self.instructions[self.counter])
+            
+    def can_run(self):
+        return (0 <= self.counter < len(self.instructions)) and (not self.waits_for_rcv or (self.waits_for_rcv and not self.rcv_queue.empty()))
     
     def execute(self, instruction):
         params = instruction.split(' ')
@@ -43,7 +45,7 @@ class Program(Thread):
     def snd(self, arg):
         self.snd_queue.put(self.value(arg))
         self.snd_counter += 1
-        print(f"snd {self.program_id}: {self.value(arg)}, {self.snd_counter}", flush=True)
+        #print(f"snd {self.program_id}: {self.value(arg)}, {self.snd_counter}", flush=True)
         self.increment_counter()
             
     def set(self, register, arg):
@@ -60,8 +62,14 @@ class Program(Thread):
         self.arithemtic_operation(register, arg, lambda a, b: a % b)
 
     def rcv(self, register):
+        if self.rcv_queue.empty():
+            self.waits_for_rcv = True
+            return
+        else:
+            self.waits_for_rcv = False
+
         self.registers[register] = self.rcv_queue.get()
-        print(f"rcv {self.program_id}: {self.registers[register]}", flush=True)
+        #print(f"rcv {self.program_id}: {self.registers[register]}", flush=True)
         self.increment_counter()
     
     def jgz(self, register, arg):
@@ -81,7 +89,7 @@ class Program(Thread):
             return self.register_value(register_or_number)
 
     def register_value(self, register):
-        default_value = self.program_id if register == 'p' else 0
+        default_value = self.program_id if register is 'p' else 0
         return self.registers.get(register, default_value)
 
     def increment_counter(self):
