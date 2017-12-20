@@ -45,7 +45,6 @@ class Program:
     def snd(self, arg):
         self.snd_queue.put(self.value(arg))
         self.snd_counter += 1
-        #print(f"snd {self.program_id}: {self.value(arg)}, {self.snd_counter}", flush=True)
         self.increment_counter()
             
     def set(self, register, arg):
@@ -53,13 +52,13 @@ class Program:
         self.increment_counter()
 
     def add(self, register, arg):
-        self.arithemtic_operation(register, arg, lambda a, b: a + b)
+        self.arithmetic_operation(register, arg, lambda a, b: a + b)
     
     def mul(self, register, arg):
-        self.arithemtic_operation(register, arg, lambda a, b: a * b)
+        self.arithmetic_operation(register, arg, lambda a, b: a * b)
 
     def mod(self, register, arg):
-        self.arithemtic_operation(register, arg, lambda a, b: a % b)
+        self.arithmetic_operation(register, arg, lambda a, b: a % b)
 
     def rcv(self, register):
         if self.rcv_queue.empty():
@@ -69,16 +68,15 @@ class Program:
             self.waits_for_rcv = False
 
         self.registers[register] = self.rcv_queue.get()
-        #print(f"rcv {self.program_id}: {self.registers[register]}", flush=True)
         self.increment_counter()
     
-    def jgz(self, register, arg):
-        if self.register_value(register) > 0:
-            self.counter += self.value(arg)
+    def jgz(self, arg0, arg1):
+        if self.value(arg0) > 0:
+            self.counter += self.value(arg1)
         else:
             self.increment_counter()
 
-    def arithemtic_operation(self, register, arg, operation):
+    def arithmetic_operation(self, register, arg, operation):
         self.registers[register] = operation(self.register_value(register), self.value(arg))
         self.increment_counter()
 
