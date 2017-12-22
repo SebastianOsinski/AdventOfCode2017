@@ -12,22 +12,46 @@ class PathFollower:
     CROSSING = '+'
     EMPTY = " "
 
-    def __init__(self, diagram):
-        self.diagram = diagram
+    POSITION_TRANSLATION = {
+        Direction.UP: lambda pos: (pos[0], pos[1] - 1),
+        Direction.DOWN: lambda pos: (pos[0], pos[1] + 1),
+        Direction.LEFT: lambda pos: (pos[0] - 1, pos[1]),
+        Direction.RIGHT: lambda pos: (pos[0] + 1, pos[1])
+    }
+
+    BLOCKED_DIRECTION = {
+        Direction.UP: Direction.DOWN,
+        Direction.DOWN: Direction.UP,
+        Direction.LEFT: Direction.RIGHT,
+        Direction.RIGHT: Direction.LEFT
+    }
+
+    DIRECTION_LINE_SYMBOL = {
+        Direction.UP: VERTICAL,
+        Direction.DOWN: VERTICAL,
+        Direction.LEFT: HORIZONTAL,
+        Direction.RIGHT: HORIZONTAL
+    }  
+
+    def __init__(self):
+        self.clear()
+
+    def clear(self):
+        self.diagram = None
         self.current_position = None
         self.finished = False
         self.direction = None
         self.visited_letters = []
         self.step_counter = 0
 
-    def follow(self):
-        self.find_starting_point()
+    def follow(self, diagram):
+        self.clear()
+        self.diagram = diagram
+        self.find_starting_position()
         while not self.finished:
-            print(f"{self.symbol_at_current_position()} {self.current_position}")
             self.move_from_current_position()
 
-
-    def find_starting_point(self):
+    def find_starting_position(self):
         self.direction = Direction.DOWN
         for i in range(0, len(self.diagram[0])):
             if self.diagram[0][i] is self.VERTICAL:
@@ -39,16 +63,33 @@ class PathFollower:
             self.finished = True
             return
 
-        if self.direction == Direction.UP:
-            self.move(self.update_position_up)
-        elif self.direction == Direction.DOWN:
-            self.move(self.update_position_down)
-        elif self.direction == Direction.LEFT:
-            self.move(self.update_position_left)
-        else:
-            self.move(self.update_position_right)
-
+        self.move(self.POSITION_TRANSLATION[self.direction])
         self.step_counter += 1
+
+    def move(self, update_position):
+        if self.symbol_at_current_position() in [self.VERTICAL, self.HORIZONTAL]:
+            self.current_position = update_position(self.current_position)
+        elif self.is_current_symbol_letter():
+            self.visited_letters.append(self.symbol_at_current_position())
+            self.current_position = update_position(self.current_position)
+        elif self.symbol_at_current_position() is self.CROSSING:
+            self.resolve_crossing()
+        else:
+            raise Exception("Unexpected symbol: " + self.symbol_at_current_position())
+
+    def resolve_crossing(self):
+        possible_directions = [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]
+        possible_directions.remove(self.BLOCKED_DIRECTION[self.direction])
+
+        for direction in possible_directions:
+            position = self.POSITION_TRANSLATION[direction](self.current_position)
+            symbol = self.symbol_at_position(position)
+            if symbol is not None and (symbol is self.DIRECTION_LINE_SYMBOL[direction] or self.is_symbol_letter(symbol)):
+                self.current_position = position
+                self.direction = direction
+                return
+
+        raise Exception("Couldn't resolve crossing")
 
     def symbol_at_position(self, position):
         dimY = len(self.diagram)
@@ -62,79 +103,8 @@ class PathFollower:
     def symbol_at_current_position(self):
         return self.symbol_at_position(self.current_position)
 
-    def move(self, update_position):
-        if self.symbol_at_current_position() in [self.VERTICAL, self.HORIZONTAL]:
-            self.current_position = update_position(self.current_position)
-        elif self.is_current_symbol_letter():
-            self.visited_letters.append(self.symbol_at_current_position())
-            self.current_position = update_position(self.current_position)
-        elif self.symbol_at_current_position() is self.CROSSING:
-            self.resolve_crossing()
-        else:
-            raise Exception("Unexpected symbol: " + self.symbol_at_current_position())
-
-    def update_position_up(self, position):
-        (x, y) = position
-        return (x, y - 1)
-
-    def update_position_down(self, position):
-        (x, y) = position
-        return (x, y + 1)
-
-    def update_position_left(self, position):
-        (x, y) = position
-        return (x - 1, y)
-
-    def update_position_right(self, position):
-        (x, y) = position
-        return (x + 1, y)
-
-    def resolve_crossing(self):
-        blocked_direction = {
-            Direction.UP: Direction.DOWN,
-            Direction.DOWN: Direction.UP,
-            Direction.LEFT: Direction.RIGHT,
-            Direction.RIGHT: Direction.LEFT
-        }   
-        possible_directions = [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]
-        possible_directions.remove(blocked_direction[self.direction])
-
-        if Direction.UP in possible_directions:
-            up_position = self.update_position_up(self.current_position)
-            symbol = self.symbol_at_position(up_position)
-            if symbol is not None and (symbol is self.VERTICAL or self.is_symbol_letter(symbol)):
-                self.current_position = up_position
-                self.direction = Direction.UP
-                return
-        
-        if Direction.DOWN in possible_directions:
-            down_position = self.update_position_down(self.current_position)
-            symbol = self.symbol_at_position(down_position)
-            if symbol is not None and (symbol is self.VERTICAL or self.is_symbol_letter(symbol)):
-                self.current_position = down_position
-                self.direction = Direction.DOWN
-                return
-
-        if Direction.LEFT in possible_directions:
-            left_position = self.update_position_left(self.current_position)
-            symbol = self.symbol_at_position(left_position)
-            if symbol is not None and (symbol is self.HORIZONTAL or self.is_symbol_letter(symbol)):
-                self.current_position = left_position
-                self.direction = Direction.LEFT
-                return
-
-        if Direction.RIGHT in possible_directions:
-            right_position = self.update_position_right(self.current_position)
-            symbol = self.symbol_at_position(right_position)
-            if symbol is not None and (symbol is self.HORIZONTAL or self.is_symbol_letter(symbol)):
-                self.current_position = right_position
-                self.direction = Direction.RIGHT
-                return
-
-        raise Exception("Couldn't resolve crossing")
-
     def is_symbol_letter(self, symbol):
-        return 65 <= ord(symbol) <= 90
+        return ord('A') <= ord(symbol) <= ord('Z')
 
     def is_current_symbol_letter(self):
         return self.is_symbol_letter(self.symbol_at_current_position())

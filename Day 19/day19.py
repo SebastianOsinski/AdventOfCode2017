@@ -11,11 +11,8 @@ diagram = []
 for line in file:
     diagram.append(list(line.rstrip(os.linesep)))
 
-#print(diagram)
-
-path_follower = PathFollower(diagram)
-
-path_follower.follow()
+path_follower = PathFollower()
+path_follower.follow(diagram)
 
 print("".join(path_follower.visited_letters))
 print(path_follower.step_counter)
