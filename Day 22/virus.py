@@ -12,6 +12,21 @@ class Direction(Enum):
     def rotated_left(self):
         return Direction((self.value - 1) % 4)
 
+class State(Enum):
+    CLEAN = 0
+    WEAKENED = 1
+    INFECTED = 2
+    FLAGGED = 3
+
+    SYMBOLS = {CLEAN: ".", WEAKENED: "W", INFECTED: "#", FLAGGED: "F"}
+
+    def next(self):
+        return State((self.value + 1) % 4)
+
+    def symbol(self):
+        return self.SYMBOLS[self]
+
+
 class Virus:
 
     def __init__(self, infection_map, no_of_bursts):
@@ -28,14 +43,14 @@ class Virus:
             self.burst()
 
     def burst(self):
-        is_current_infected = self.infection_map[self.current_x][self.current_y]
+        is_current_infected = self.infection_map[self.current_x][self.current_y] == State.INFECTED
 
         if is_current_infected:
             self.direction = self.direction.rotated_right()
         else:
             self.direction = self.direction.rotated_left()
 
-        self.infection_map[self.current_x][self.current_y] = not is_current_infected
+        self.infection_map[self.current_x][self.current_y] = State.CLEAN if is_current_infected else State.INFECTED
 
         if not is_current_infected:
             self.infecting_bursts_count += 1
@@ -55,15 +70,15 @@ class Virus:
 
         new_width = len(self.infection_map[0]) + 2
 
-        resized_map = [[False] * new_width]
+        resized_map = [[State.CLEAN] * new_width]
 
         for row in self.infection_map:
-            new_row = [False]
+            new_row = [State.CLEAN]
             new_row.extend(row)
-            new_row.append(False)
+            new_row.append(State.CLEAN)
             resized_map.append(new_row)
 
-        resized_map.append([False] * new_width)
+        resized_map.append([State.CLEAN] * new_width)
 
         self.infection_map = resized_map
 
