@@ -18,14 +18,18 @@ class State(Enum):
     INFECTED = 2
     FLAGGED = 3
 
-    SYMBOLS = {CLEAN: ".", WEAKENED: "W", INFECTED: "#", FLAGGED: "F"}
-
     def next(self):
         return State((self.value + 1) % 4)
 
     def symbol(self):
-        return self.SYMBOLS[self]
-
+        if self is self.CLEAN:
+            return "."
+        elif self is self.WEAKENED:
+            return "W"
+        elif self is self.INFECTED:
+            return "#"
+        else:
+            return "F"
 
 class Virus:
 
@@ -43,16 +47,21 @@ class Virus:
             self.burst()
 
     def burst(self):
-        is_current_infected = self.infection_map[self.current_x][self.current_y] == State.INFECTED
+        current_state = self.infection_map[self.current_x][self.current_y]
 
-        if is_current_infected:
+        if current_state is State.CLEAN:
+            self.direction = self.direction.rotated_left()
+        elif current_state is State.WEAKENED:
+            pass
+            # pass, do not turn
+        elif current_state is State.INFECTED:
             self.direction = self.direction.rotated_right()
         else:
-            self.direction = self.direction.rotated_left()
+            self.direction = self.direction.rotated_right().rotated_right()
 
-        self.infection_map[self.current_x][self.current_y] = State.CLEAN if is_current_infected else State.INFECTED
+        self.infection_map[self.current_x][self.current_y] = current_state.next()
 
-        if not is_current_infected:
+        if current_state is State.WEAKENED:
             self.infecting_bursts_count += 1
 
         if self.direction is Direction.UP:
@@ -89,13 +98,13 @@ class Virus:
         for r in range(len(self.infection_map)):
             row = self.infection_map[r]
             if self.current_x == r:
-                line = " ".join(["#" if p else "." for p in row[0:self.current_y]])
+                line = " ".join([s.symbol() for s in row[0:self.current_y]])
                 if len(row[0:self.current_y]):
                     line = " " + line
-                line += "[" + ("#" if row[self.current_x] else ".") + "]"
-                line += " ".join(["#" if p else "." for p in row[self.current_y + 1:]])
+                line += "[" + (row[self.current_y].symbol()) + "]"
+                line += " ".join([s.symbol() for s in row[self.current_y + 1:]])
                 print(line, flush=True)
             else:    
-                print(" " + " ".join(["#" if p else "." for p in row]), flush=True)
+                print(" " + " ".join([s.symbol() for s in row]), flush=True)
         print("", flush=True)
     
