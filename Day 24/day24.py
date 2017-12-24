@@ -46,7 +46,10 @@ def find_strongest_subcomponents(start, rest_of_components):
 
             subcomponents, subcomponents_strength = find_strongest_subcomponents(sub_start, rest_copy)
 
-            if subcomponents_strength > strongest_subcomponents_strength:
+            if len(subcomponents) > len(strongest_subcomponents):
+                strongest_subcomponents = subcomponents
+                strongest_subcomponents_strength = subcomponents_strength
+            elif len(subcomponents) == len(strongest_subcomponents) and subcomponents_strength > strongest_subcomponents_strength:
                 strongest_subcomponents = subcomponents
                 strongest_subcomponents_strength = subcomponents_strength
 
@@ -57,6 +60,7 @@ def find_strongest(components):
     zeros_rest_pairs = find_zeros_and_rest(components)
 
     max_strength = 0
+    max_length = 0
 
     for pair in zeros_rest_pairs:
         zero = pair[0]
@@ -64,7 +68,10 @@ def find_strongest(components):
 
         subcomponents, subcomponents_strength  = find_strongest_subcomponents(zero, rest)
 
-        if subcomponents_strength > max_strength:
+        if len(subcomponents) > max_length:
+            max_length = len(subcomponents)
+            max_strength = subcomponents_strength
+        elif len(subcomponents) == max_length and subcomponents_strength > max_strength:
             max_strength = subcomponents_strength
 
     return max_strength
